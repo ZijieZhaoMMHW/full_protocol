@@ -41,18 +41,16 @@ function [coef_MLR_RAW,r_raw,coef_LR_DETREND,coef_MLR_DETREND,r_detrend,...
 %   res_detrend - A 3D matrix (x-y-t), containing residuals from the MLR
 %   based on detrend SST.
 %
-%   hc_t - A 3D matrix (x-y=5), containing the heat contributions pf T,
+%   hc_t - A 3D matrix (x-y-5), containing the heat contributions pf T,
 %   ENSO, AMO, PDO, and Residuals from the MLR based on detrend SST.
 
 m_y_used=[sort(repmat((year_range(1):year_range(2))',12,1)) repmat((1:12)',...
     year_range(2)-year_range(1)+1,1)];
 
 ssta_raw=NaN(size(sst,1),size(sst,2),size(sst,3));
-threshold_clim=NaN(size(sst,1),size(sst,2),size(sst,3));
 for i=1:12
     index_here=m_y_used(:,2)==i;
     ssta_raw(:,:,index_here)=sst(:,:,index_here)-nanmean(sst(:,:,index_here),3);
-    threshold_clim(:,:,index_here)=repmat(quantile(sst(:,:,index_here),0.9,3),1,1,nansum(index_here));
 end
 
 area_used=repmat(cosd(double(lat')),size(ssta_raw,1),1);
@@ -83,10 +81,16 @@ ssta_detrend=ssta_detrend./repmat(area_used,1,1,size(ssta_raw,3));
 
 sst_re=clim_add+ssta_detrend;
 
+threshold_re=NaN(size(sst,1),size(sst,2),size(sst,3));
+for i=1:12
+    index_here=m_y_used(:,2)==i;
+    threshold_re(:,:,index_here)=repmat(quantile(sst_re(:,:,index_here),0.9,3),1,1,nansum(index_here));
+end
+
 ew_index=NaN(size(ssta_detrend));
 
-ew_index(sst_re>threshold_clim)=1;
-ew_index(sst_re<threshold_clim)=0;
+ew_index(sst_re>threshold_re)=1;
+ew_index(sst_re<threshold_re)=0;
 
 [coef_MLR_RAW,r_raw,coef_LR_DETREND,coef_MLR_DETREND,r_detrend,...
     res_detrend,hc_t,~]=combining_together(ssta_raw,ssta_detrend,enso_line,...
